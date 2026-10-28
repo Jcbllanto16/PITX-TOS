@@ -105,9 +105,34 @@ create table if not exists public.gate_events (
 );
 create index if not exists gate_events_created_idx on public.gate_events(created_at desc);
 create index if not exists gate_events_pending_idx on public.gate_events(pending) where pending;
+create index if not exists gate_events_booking_idx on public.gate_events(booking_id);
+create index if not exists gate_events_resolved_by_idx on public.gate_events(resolved_by);
 
 -- ============================================================
--- Row level security: signed-in staff can read everything and edit rules.
+-- Staff allowlist: only accounts listed here can use TOS. Signing up to the
+-- Supabase project is not enough. Add a staff member after creating their
+-- login (Authentication → Users):
+--   insert into public.staff (user_id, email)
+--   select id, email from auth.users where email = 'name@megawide.com.ph';
+-- ============================================================
+create table if not exists public.staff (
+  user_id   uuid primary key references auth.users(id) on delete cascade,
+  email     text,
+  added_at  timestamptz not null default now()
+);
+alter table public.staff enable row level security;
+drop policy if exists "staff see own row" on public.staff;
+create policy "staff see own row" on public.staff for select to authenticated using (user_id = (select auth.uid()));
+
+create or replace function public.is_staff()
+returns boolean
+language sql stable security definer set search_path = public
+as $$ select exists (select 1 from public.staff where user_id = (select auth.uid())) $$;
+revoke all on function public.is_staff() from public, anon;
+grant execute on function public.is_staff() to authenticated;
+
+-- ============================================================
+-- Row level security: staff can read everything and edit rules.
 -- All gate writes go through the functions below.
 -- ============================================================
 alter table public.operators   enable row level security;
@@ -125,12 +150,12 @@ declare t text;
 begin
   foreach t in array array['operators','routes','vehicles','bays','bookings','gates','devices','rules','gate_events'] loop
     execute format('drop policy if exists "staff can read" on public.%I', t);
-    execute format('create policy "staff can read" on public.%I for select to authenticated using (true)', t);
+    execute format('create policy "staff can read" on public.%I for select to authenticated using ((select public.is_staff()))', t);
   end loop;
 end $$;
 
 drop policy if exists "staff can edit rules" on public.rules;
-create policy "staff can edit rules" on public.rules for update to authenticated using (true) with check (true);
+create policy "staff can edit rules" on public.rules for update to authenticated using ((select public.is_staff())) with check ((select public.is_staff()));
 
 -- ============================================================
 -- Gate logic
@@ -157,6 +182,9 @@ declare
   why    text;
   norm   text := upper(regexp_replace(trim(p_plate), '\s+', '', 'g'));
 begin
+  if coalesce(auth.jwt() ->> 'role', '') <> 'service_role' and not public.is_staff() then
+    raise exception 'This account is not authorised for TOS';
+  end if;
   select * into r from public.rules where id = 1;
   select * into g from public.gates where id = p_gate;
   if not found then raise exception 'Unknown gate %', p_gate; end if;
@@ -241,6 +269,9 @@ language plpgsql security definer set search_path = public
 as $$
 declare ev public.gate_events;
 begin
+  if coalesce(auth.jwt() ->> 'role', '') <> 'service_role' and not public.is_staff() then
+    raise exception 'This account is not authorised for TOS';
+  end if;
   update public.gate_events
      set pending = false,
          resolution = case when p_allow then 'ALLOWED' else 'DENIED' end,

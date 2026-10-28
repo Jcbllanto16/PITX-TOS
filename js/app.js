@@ -399,6 +399,11 @@
     const email = session.user.email || '';
     $('#avatar').textContent = (email.split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2) || 'PT').toUpperCase();
     $('#user-email').textContent = email;
+    const staff = await sb.rpc('is_staff');
+    if (staff.error || !staff.data) {
+      $('#main').innerHTML = `<div class="panel pb" style="max-width:640px"><h1>Account not yet authorised</h1><p class="muted">You're signed in as ${esc(email)}, but this account isn't on the TOS staff list. Ask the system administrator to add it, then sign in again.</p><button class="btn" data-act="signout">Sign out</button></div>`;
+      return;
+    }
     try { await loadStatic(); await loadDay(); }
     catch (err) { $('#main').innerHTML = `<div class="panel pb"><h1>Could not load data</h1><p class="muted">${esc(err.message)}</p><p class="muted">Check that schema.sql and seed.sql have been run in this Supabase project, and that this account can sign in.</p></div>`; return; }
 

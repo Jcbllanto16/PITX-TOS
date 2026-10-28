@@ -37,6 +37,11 @@ supabase/functions/gate-read/      Endpoint for cameras / RFID / barrier control
    1. Go to **Authentication → Users → Add user → Create new user**.
    2. Enter an email and password, and tick **Auto Confirm User**.
    3. Repeat for each PITX admin.
+   5. Put each admin on the TOS staff list. Signing in alone isn't enough; anyone not on the list sees "Account not yet authorised". In **SQL Editor**, run:
+      ```sql
+      insert into public.staff (user_id, email)
+      select id, email from auth.users where email = 'name@megawide.com.ph';
+      ```
 5. Turn off public sign-ups so only the accounts you create can log in: **Authentication → Sign In / Providers → Email → Allow new users to sign up = off**.
 6. Copy two values from **Project Settings → API** for the next step:
    - the **Project URL**

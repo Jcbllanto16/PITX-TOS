@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PITX Departures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body style="background:#0a0d10">
+<div class="board-page">
+  <div class="board">
+    <div class="board-top"><div class="ttl">Departures<small>Pag-alis · Parañaque Integrated Terminal Exchange</small></div><div class="board-clock" id="bclock">--:--</div></div>
+    <div class="board-scroll" id="bdep"><p class="board-empty">Loading departures…</p></div>
+    <div class="board-status" id="bstatus"></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/board.js"></script>
+<script>
+(function () {
+  const OFF = 480, DAY = 1440;
+  const nowMin = () => (Date.now() / 60000 + OFF) % DAY;
+  const mm = ts => (ts ? (Date.parse(ts) / 60000 + OFF) % DAY : null);
+  const cfg = window.TOS_CONFIG || {};
+  const out = document.getElementById('bdep'), clock = document.getElementById('bclock'), status = document.getElementById('bstatus');
+  if (!cfg.supabaseUrl || cfg.supabaseUrl.includes('YOUR-')) { out.innerHTML = '<p class="board-empty">Board not connected. Set js/config.js.</p>'; return; }
+  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  let rows = [], grace = 10, lastOk = null;
+  function draw() {
+    const now = nowMin();
+    clock.textContent = TOSBoard.fmt(now);
+    out.innerHTML = TOSBoard.table(rows, now, grace);
+    status.textContent = lastOk ? 'Updated ' + TOSBoard.fmt(lastOk) : '';
+  }
+  async function load() {
+    const { data, error } = await sb.rpc('get_board');
+    if (error) { status.textContent = 'Connection problem, retrying… (' + error.message + ')'; return; }
+    rows = data.map(r => ({ dep: mm(r.etd), slot: mm(r.slot_start), arrivedAt: mm(r.arrived_at), departedAt: mm(r.departed_at), denied: r.denied, held: r.held, review: r.review_pending, dest: r.destination, trade: r.trade_name, bay: r.bay_id }));
+    if (data.length) grace = data[0].grace_min;
+    lastOk = nowMin(); draw();
+  }
+  load(); setInterval(load, 20000); setInterval(draw, 10000);
+})();
+</script>
+</body>
+</html>

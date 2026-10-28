@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PITX Terminal Ops</title>
+<meta name="description" content="PITX Terminal Operating System: gate access control, bay timeline and departure board.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="setup" id="setup" hidden>
+  <div class="panel pb">
+    <h1>Connect Supabase</h1>
+    <p class="muted">This site isn't connected to a database yet. Open <code>js/config.js</code>, paste your Supabase project URL and anon public key (Supabase → Project Settings → API), and commit the change. The README has the full setup steps.</p>
+  </div>
+</div>
+
+<div class="login" id="login" hidden>
+  <form class="login-card" id="login-form">
+    <div class="login-brand"><span class="wm">PITX</span><span class="lt">Parañaque Integrated<br>Terminal Exchange</span></div>
+    <h1>Terminal Operations</h1>
+    <p>Sign in with your PITX admin account.</p>
+    <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
+    <div class="err" id="login-err" role="alert"></div>
+    <button class="btn primary" id="login-btn" type="submit">Sign in</button>
+    <div class="login-foot">Concourse screens: open the <a href="board.html">public departure board</a>. Accounts are created by the system administrator in Supabase.</div>
+  </form>
+</div>
+
+<div class="app" id="app" hidden>
+  <aside class="sb" id="sb">
+    <div class="logo"><span class="wm">PITX</span><span class="lt">Parañaque Integrated<br>Terminal Exchange</span></div>
+    <nav class="nav" aria-label="Views">
+      <a href="#overview"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Overview</a>
+      <a href="#gates"><svg viewBox="0 0 24 24"><path d="M4 20V8M4 10h16"/><path d="M8 10l2-3M12 10l2-3M16 10l2-3"/><path d="M20 20v-6"/></svg>Gate monitor</a>
+      <a href="#bays"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M9 16.5V7.5h3.5a2.5 2.5 0 0 1 0 5H9"/></svg>Bay timeline</a>
+      <a href="#board"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16.5V20"/></svg>Passenger board</a>
+      <a href="#cts"><svg viewBox="0 0 24 24"><path d="M4 7h11M4 12h16M4 17h9"/><path d="M17 4l3 3-3 3"/></svg>CTS feed</a>
+      <a href="#devices"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.5M12 18v2.5M3.5 12H6M18 12h2.5M6 6l1.8 1.8M16.2 16.2 18 18M6 18l1.8-1.8M16.2 7.8 18 6"/></svg>Devices &amp; rules</a>
+    </nav>
+    <div class="sb-foot"><b>Terminal Operating System</b>Gate access, bays and departures</div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="mainwrap">
+    <header class="top"><div class="top-in">
+      <button class="iconbtn" id="menubtn" aria-label="Toggle menu"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
+      <div class="spacer"></div>
+      <div class="clock"><div class="clock-time"><span id="clk">--:--</span><small id="clk-sub"></small></div></div>
+      <button class="bell" id="bell" aria-label="Vehicles waiting for an admin decision"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="badge" id="badge" hidden>0</span></button>
+      <div class="userwrap">
+        <button class="avatar" id="avatar" aria-label="Account menu">PT</button>
+        <div class="usermenu" id="usermenu" hidden><div class="em" id="user-email"></div><button class="btn" data-act="signout">Sign out</button></div>
+      </div>
+    </div></header>
+    <main id="main"></main>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/board.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
